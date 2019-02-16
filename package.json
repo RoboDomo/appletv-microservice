@@ -1,0 +1,26 @@
+{
+  "name": "appletv-microservice",
+  "version": "1.0.0",
+  "description": "RoboDomo microservice to control Apple TV",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RoboDomo/appletv-microservice.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RoboDomo/appletv-microservice/issues"
+  },
+  "homepage": "https://github.com/RoboDomo/appletv-microservice#readme",
+  "dependencies": {
+    "debug": "^4.1.1",
+    "microservice-core": "github:robodomo/microservice-core",
+    "mqtt": "^2.18.8",
+    "node-appletv": "github:robodomo/node-appletv"
+  }
+}
