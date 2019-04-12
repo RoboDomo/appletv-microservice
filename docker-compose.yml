@@ -1,0 +1,9 @@
+appletv:
+  build: .
+  user: app
+  working_dir: /home/app
+  volumes:
+    - .:/home/app
+    - /home/app/node_modules
+  command: >
+    /bin/bash -c "npm start"
