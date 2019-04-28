@@ -3,6 +3,176 @@
 const console = require("console"),
   HostBase = require("microservice-core/HostBase");
 
+const pyatv = require("@sebbo2002/node-pyatv");
+
+const Config = require("./config");
+
+const TOPIC_ROOT = process.env.TOPIC_ROOT || "appletv",
+  MQTT_HOST = process.env.MQTT_HOST || "ha";
+
+/*
+pyatv
+  .scan()
+  .then(results => {
+    results.forEach(atv => {
+      const name = atv._options.name;
+      console.log("atv", atv, name);
+      const listener = atv.push();
+
+      listener.on("error", error => {
+        console.log(`Listener Error for ${name}: ${error}`);
+      });
+      listener.on("close", () => {
+        console.log(`Listener for ${name} closed`);
+      });
+      listener.on("state", playing => {
+        console.log(`${name} state playing`, playing);
+      });
+
+      //      setTimeout(() => {
+      //        listener.close();
+      //      }, 60000);
+    });
+  })
+  .catch(error => {
+    console.log("Error during scan:", error);
+  });
+  */
+
+class AppleTVHost extends HostBase {
+  constructor(host) {
+    super(MQTT_HOST, `${TOPIC_ROOT}/${host.device}`);
+    this.host = host;
+    this.interval = null;
+
+    this.connect();
+  }
+
+  stopTimer() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+  }
+
+  startTimer() {
+    console.log("startTimer", this.state.position);
+    this.stopTimer();
+    let elapsed = this.state.position || 0;
+    this.interval = setInterval(() => {
+      elapsed++;
+      this.state = {
+        elapsedTime: elapsed
+      };
+    }, 1000);
+  }
+
+  connect() {
+    const host = this.host,
+      name = host.name,
+      atv = (this.atv = foundDevices[host.name]);
+
+    const listener = atv.push();
+    listener.on("error", error => {
+      console.log(`Listener Error for ${name}: ${error}`);
+    });
+
+    listener.on("close", () => {
+      console.log(`Listener for ${name} closed`);
+      this.stopTimer();
+    });
+
+    listener.on("state", playing => {
+      const oldState = this.state,
+        newState = Object.assign(
+          { title: null, artist: null, album: null, totalTime: 0 },
+          playing
+        );
+
+      newState.info = playing;
+      this.state = newState;
+      console.log("oldState", oldState, "newState", newState);
+      if (playing.playState === "playing") {
+        this.startTimer();
+      } else {
+        this.stopTimer();
+      }
+      console.log(`${name} newState nowPlaying`, newState);
+    });
+  }
+
+  async command(type, arg) {
+    try {
+      console.log("command", arg);
+      switch (arg.toLowerCase()) {
+        case "up":
+          await this.atv.up();
+          break;
+        case "down":
+          await this.atv.down();
+          break;
+        case "left":
+          await this.atv.left();
+          break;
+        case "right":
+          await this.atv.right();
+          break;
+        case "menu":
+          await this.atv.menu();
+          break;
+        case "next":
+          await this.atv.next();
+          break;
+        case "previous":
+          await this.atv.previous();
+          break;
+        case "stop":
+          await this.atv.stop();
+          break;
+        case "topmenu":
+          await this.atv.topMenu();
+          break;
+        case "select":
+          await this.atv.select();
+          break;
+        default:
+          console.log("command invalid", arg);
+          break;
+      }
+    } catch (e) {
+      console.log("sendKeyCommand", e.message, e.stack);
+    }
+  }
+
+  isStopped(info) {
+    if (!info) {
+      return true;
+    }
+    if (info.title !== "") {
+      return false;
+    }
+    return true;
+  }
+}
+
+const foundDevices = {},
+  hosts = {};
+
+const main = async () => {
+  console.log("Scanning...");
+  const results = await pyatv.scan();
+  console.log("Starting...");
+  for (const result of results) {
+    const options = result._options;
+    foundDevices[options.name] = result;
+  }
+  for (const device of Config.atv) {
+    hosts[device.name] = new AppleTVHost(device);
+  }
+};
+main();
+
+/*
 const atv = require("node-appletv"),
   { scan, parseCredentials } = atv;
 
@@ -366,3 +536,4 @@ const main = async () => {
   }
 };
 main();
+*/

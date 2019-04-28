@@ -18,9 +18,10 @@
   },
   "homepage": "https://github.com/RoboDomo/appletv-microservice#readme",
   "dependencies": {
+    "@sebbo2002/node-pyatv": "^1.0.3",
+    "@types/node": "^11.13.4",
     "debug": "^4.1.1",
     "microservice-core": "github:robodomo/microservice-core",
-    "mqtt": "^2.18.8",
-    "node-appletv": "github:robodomo/node-appletv"
+    "mqtt": "^2.18.8"
   }
 }
