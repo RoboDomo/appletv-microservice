@@ -143,10 +143,10 @@ class AppleTVHost extends HostBase {
 
     if (true) {
       d.on("debug", message => {
-        //        console.log("DEBUG", message);
+        console.log("DEBUG", message);
       });
       d.on("supportedCommands", commands => {
-        //        console.log("supportedCommands", commands);
+        console.log("supportedCommands", commands);
         if (
           commands.length === 0 &&
           !(this.state.playbackState === "playing")
@@ -156,7 +156,7 @@ class AppleTVHost extends HostBase {
       });
 
       d.on("nowPlaying", xinfo => {
-        //        console.log("nowPlaying", info);
+        console.log("nowPlaying", info);
         if (xinfo === null) {
           return;
         }
@@ -179,6 +179,7 @@ class AppleTVHost extends HostBase {
 
     if (true) {
       d.on("message", message => {
+        console.log("message", message);
         const playbackStates = ["stopped", "playing", "paused"];
 
         const handleTransactionMessage = msg => {
