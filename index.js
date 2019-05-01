@@ -4,7 +4,7 @@ const console = require("console"),
   HostBase = require("microservice-core/HostBase");
 
 const atv = require("node-appletv"),
-  { scan, parseCredentials } = atv;
+  { AppleTV, scan, parseCredentials } = atv;
 
 //const atv = require("node-appletv"),
 //  { AppleTV, scan, parseCredentials } = atv;
@@ -64,7 +64,9 @@ class AppleTVHost extends HostBase {
   }
 
   async command(type, arg) {
-    console.log("command", arg);
+    console.log("commands", commands);
+    console.log("command", "'" + arg + "'", commands[arg]);
+    console.log(commands["BeginForward"]);
     try {
       // see https://github.com/Daij-Djan/DDHidLib/blob/master/usb_hid_usages.txt
       if (commands[arg]) {
@@ -75,6 +77,7 @@ class AppleTVHost extends HostBase {
           )});`
         );
         await this.dev.sendKeyPressAndRelease(page, code);
+        //        await this.dev.sendKeyCommand(arg);
       } else {
         console.log("invalid command ", arg);
         return;
@@ -86,6 +89,8 @@ class AppleTVHost extends HostBase {
   }
 
   stopTimer() {
+    console.log("stopTimer");
+    return;
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
@@ -94,6 +99,7 @@ class AppleTVHost extends HostBase {
 
   startTimer() {
     console.log("startTimer", this.state.elapsedTime);
+    return;
     this.stopTimer();
     let elapsed = this.state.elapsedTime || 0;
     this.interval = setInterval(() => {
@@ -115,7 +121,7 @@ class AppleTVHost extends HostBase {
   }
 
   async connect() {
-    const d = await this.dev.openConnection(credentials);
+    const d = await this.dev.openConnection(this.credentials);
     console.log("connected", d.address);
     //    this.state.timestamp = null;
     //    this.state.duration = null;
@@ -141,12 +147,15 @@ class AppleTVHost extends HostBase {
       displayId: null
     };
 
-    if (true) {
+    if (false) {
       d.on("debug", message => {
         console.log("DEBUG", message);
       });
+    }
+
+    if (false) {
       d.on("supportedCommands", commands => {
-        console.log("supportedCommands", commands);
+        //        console.log("supportedCommands", commands);
         if (
           commands.length === 0 &&
           !(this.state.playbackState === "playing")
@@ -154,9 +163,10 @@ class AppleTVHost extends HostBase {
           this.state = { playbackState: "stopped" };
         }
       });
-
+    }
+    if (false) {
       d.on("nowPlaying", xinfo => {
-        console.log("nowPlaying", info);
+        //        console.log("nowPlaying", xinfo);
         if (xinfo === null) {
           return;
         }
@@ -177,7 +187,7 @@ class AppleTVHost extends HostBase {
       });
     }
 
-    if (true) {
+    if (false) {
       d.on("message", message => {
         console.log("message", message);
         const playbackStates = ["stopped", "playing", "paused"];
@@ -276,7 +286,7 @@ class AppleTVHost extends HostBase {
       });
     }
 
-    if (false) {
+    if (true) {
       d.on("nowPlaying", info => {
         console.log("nowPlaying");
         if (this.isStopped(info)) {
@@ -345,13 +355,9 @@ class AppleTVHost extends HostBase {
   }
 }
 
-const creds =
-    "2CACEC26-98C3-45E7-BA30-7C3DA36ED7FF:31423334334643312d313238332d343745412d393341392d324433453744333844363742:39623063623562372d363664352d346334652d396365322d333637663135303866333866:1b8d1cbe93dc9c5d1ea317d71bd5159ea9580c99a353c4448f31f8a48881fc0f:4deb02b842903c4f699bec4ac4d9cc68a05492719fbf017f77c1da00f733dec3",
-  credentials = parseCredentials(creds);
-
 const main = async () => {
   try {
-    const devices = await scan(credentials.uniqueIdentifier);
+    const devices = await scan();
     console.log("----- scan complete");
     for (const device of devices) {
       foundDevices[device.name] = device;
