@@ -72,6 +72,7 @@ class AppleTVHost extends HostBase {
       name = host.name,
       atv = (this.atv = foundDevices[host.name]);
 
+    console.log("atv", atv);
     const listener = atv.push();
     listener.on("error", error => {
       console.log(`Listener Error for ${name}: ${error}`);
@@ -161,7 +162,7 @@ const foundDevices = {},
 const main = async () => {
   console.log("Scanning...");
   const results = await pyatv.scan();
-  console.log("Starting...");
+  console.log("Starting...", results);
   for (const result of results) {
     const options = result._options;
     foundDevices[options.name] = result;

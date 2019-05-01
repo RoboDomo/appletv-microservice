@@ -16,6 +16,8 @@ To build on Linux, you will need
 ```
 $ sudo apt-get install libavahi-compat-libdnssd-dev
 ```
+Before you use node-pyatv you need to install pyatv and unbuffer. 
+See: https://github.com/sebbo2002/node-pyatv
 
 You will also need to run 
 ```$ ./node_mocdules/.bin/appletv pair
