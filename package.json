@@ -19,6 +19,7 @@
   "homepage": "https://github.com/RoboDomo/appletv-microservice#readme",
   "dependencies": {
     "debug": "^4.1.1",
+    "forever": "^1.0.0",
     "microservice-core": "github:robodomo/microservice-core",
     "mqtt": "^2.18.8",
     "node-appletv": "github:robodomo/node-appletv"
