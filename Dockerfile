@@ -10,4 +10,5 @@ ENV HOME=/home/app
 WORKDIR /home/app
 COPY . /home/app
 RUN cd $HOME && npm install
+RUN sed -i "s/#enable-dbus=yes/enable-dbus=no/g" /etc/avahi/avahi-daemon.conf
 CMD service dbus start && service avahi-daemon start && npm start
