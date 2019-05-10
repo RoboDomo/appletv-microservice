@@ -2,8 +2,9 @@
 
 # run container without making it a daemon - useful to see logging output
 docker run \
-    -v /home/mschwartz/github/RoboDomo/appletv-microservice:/home/app \
-    -v node_modules \
+    --net=host \
+    -v $PWD:/home/app \
+    -v /home/app/node_modules \
     --rm \
     --name="appletv-microservice" \
     robodomo/appletv-microservice

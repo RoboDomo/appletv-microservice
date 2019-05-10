@@ -1,10 +1,10 @@
-//process.env.DEBUG = "HostBase";
+process.env.DEBUG = "HostBase";
 
 const console = require("console"),
   HostBase = require("microservice-core/HostBase");
 
 const atv = require("node-appletv"),
-  { AppleTV, scan, parseCredentials } = atv;
+  { scan, parseCredentials } = atv;
 
 //const atv = require("node-appletv"),
 //  { AppleTV, scan, parseCredentials } = atv;
@@ -12,8 +12,10 @@ const atv = require("node-appletv"),
 const Config = require("./config");
 
 const TOPIC_ROOT = process.env.TOPIC_ROOT || "appletv",
-  MQTT_HOST = process.env.MQTT_HOST || "ha";
+  MQTT_HOST = process.env.MQTT_HOST || "mqtt://ha";
 
+console.log("MQTT_HOST", MQTT_HOST);
+console.log("TOPIC_ROOT", TOPIC_ROOT);
 const foundDevices = {};
 const hosts = {};
 
@@ -43,6 +45,7 @@ class AppleTVHost extends HostBase {
     super(MQTT_HOST, TOPIC_ROOT + "/" + host.device);
     this.host = host;
     this.dev = foundDevices[host.name];
+    console.log("this.host", this.host);
     this.credentials = parseCredentials(host.creds);
 
     this.interval = null;
@@ -100,6 +103,7 @@ class AppleTVHost extends HostBase {
   startTimer() {
     console.log("startTimer", this.state.elapsedTime);
     return;
+    /*
     this.stopTimer();
     let elapsed = this.state.elapsedTime || 0;
     this.interval = setInterval(() => {
@@ -108,6 +112,7 @@ class AppleTVHost extends HostBase {
         elapsedTime: elapsed
       };
     }, 1000);
+    */
   }
 
   isStopped(info) {
@@ -308,7 +313,7 @@ class AppleTVHost extends HostBase {
           return;
         }
         const message = info.message.nowPlayingInfo;
-        //        console.log("info", info);
+        console.log("info", info);
         if (message) {
           this.state = {
             timestamp: info.timestamp,
@@ -359,6 +364,7 @@ const main = async () => {
   try {
     const devices = await scan();
     console.log("----- scan complete");
+    console.log("devices", devices);
     for (const device of devices) {
       foundDevices[device.name] = device;
     }
