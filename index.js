@@ -379,3 +379,6 @@ const main = async () => {
   }
 };
 main();
+setTimeout(() => {
+  process.exit(0);
+}, 6100);
