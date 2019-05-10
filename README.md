@@ -14,7 +14,7 @@ docker.
 To build on Linux, you will need
 
 ```
-$ sudo apt-get install libavahi-compat-libdnssd-dev
+$ sudo apt-get install libsodium-dev avahi-daemon avahi-discover libnss-mdns libavahi-compat-libdnssd-dev
 ```
 
 You will also need to run 
