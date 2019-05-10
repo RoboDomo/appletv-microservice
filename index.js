@@ -369,6 +369,7 @@ const main = async () => {
       foundDevices[device.name] = device;
     }
 
+    // TODO: use env  for array of atv?
     for (const device of Config.atv) {
       hosts[device.name] = new AppleTVHost(device);
     }
