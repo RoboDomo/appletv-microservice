@@ -1,4 +1,4 @@
 #!/bin/sh
 
-sudo rm -rf .config
-docker build -t robodomo/appletv-microservice .
+sudo rm -rf .config .forever
+docker build --no-cache -t robodomo/appletv-microservice .
