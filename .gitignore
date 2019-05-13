@@ -3,3 +3,4 @@ persist
 .npm
 .forever
 .config
+.bash_history
