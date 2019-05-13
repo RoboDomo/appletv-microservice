@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-  #-v /var/run/dbus:/var/run/dbus \
 docker run \
-  --net=host \
   -it  \
   --rm \
   --name appletv-microservice \
