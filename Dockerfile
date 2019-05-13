@@ -12,4 +12,4 @@ COPY . /home/app
 RUN cd $HOME && rm -rf node_modules
 RUN cd $HOME && npm install
 RUN sed -i "s/#enable-dbus=yes/enable-dbus=no/g" /etc/avahi/avahi-daemon.conf
-CMD service dbus start && service avahi-daemon start && npm start
+CMD ./entry.sh
