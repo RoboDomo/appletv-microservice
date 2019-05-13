@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # run container without making it a daemon - useful to see logging output
+    #-v /var/run/dbus/system_bus_docket:/var/run/dbus/system_bus_socket \
 docker run \
     --net=host \
     -v $PWD:/home/app \
