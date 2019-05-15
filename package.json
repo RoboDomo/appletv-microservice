@@ -22,6 +22,7 @@
     "forever": "^1.0.0",
     "microservice-core": "github:robodomo/microservice-core",
     "mqtt": "^2.18.8",
-    "node-appletv": "github:robodomo/node-appletv"
+    "node-appletv": "github:robodomo/node-appletv",
+    "node-localstorage": "^1.3.1"
   }
 }

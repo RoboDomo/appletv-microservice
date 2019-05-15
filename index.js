@@ -1,7 +1,9 @@
-process.env.DEBUG = "HostBase";
+//process.env.DEBUG = "HostBase";
 
 const console = require("console"),
-  HostBase = require("microservice-core/HostBase");
+  HostBase = require("microservice-core/HostBase"),
+  LocalStorage = require("node-localstorage").LocalStorage,
+  localStorage = new LocalStorage("/tmp/appletv-localstorage");
 
 const atv = require("node-appletv"),
   { scan, parseCredentials } = atv;
@@ -14,8 +16,6 @@ const Config = require("./config");
 const TOPIC_ROOT = process.env.TOPIC_ROOT || "appletv",
   MQTT_HOST = process.env.MQTT_HOST || "mqtt://ha";
 
-console.log("MQTT_HOST", MQTT_HOST);
-console.log("TOPIC_ROOT", TOPIC_ROOT);
 const foundDevices = {};
 const hosts = {};
 
@@ -40,15 +40,40 @@ const commands = {
   SkipBackward: [12, 0xb6]
 };
 
+class DelayedTask {
+  constructor(fn, time) {
+    this.fn = fn;
+    this.timer = setTimeout(fn, time);
+    this.time = time;
+  }
+  defer(time) {
+    if (!time) {
+      time = this.time;
+    } else {
+      this.time = time;
+    }
+    this.cancel();
+    this.timer = setTimeout(this.fn, this.time);
+  }
+  cancel() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
+  }
+}
+
 class AppleTVHost extends HostBase {
   constructor(host) {
     super(MQTT_HOST, TOPIC_ROOT + "/" + host.device);
     this.host = host;
     this.dev = foundDevices[host.name];
-    console.log("this.host", this.host);
     this.credentials = parseCredentials(host.creds);
 
     this.interval = null;
+
+    this.watchdog = new DelayedTask(() => {
+      process.exit(0);
+    }, 10000);
 
     //    this.state = { playbackState: "stopped" };
     // devices is an array of AppleTV objects
@@ -67,6 +92,7 @@ class AppleTVHost extends HostBase {
   }
 
   async command(type, arg) {
+    this.watchdog.defer();
     console.log("commands", commands);
     console.log("command", "'" + arg + "'", commands[arg]);
     console.log(commands["BeginForward"]);
@@ -79,6 +105,7 @@ class AppleTVHost extends HostBase {
             16
           )});`
         );
+        this.watchdog.defer();
         await this.dev.sendKeyPressAndRelease(page, code);
         //        await this.dev.sendKeyCommand(arg);
       } else {
@@ -128,6 +155,7 @@ class AppleTVHost extends HostBase {
   async connect() {
     const d = await this.dev.openConnection(this.credentials);
     console.log("connected", d.address);
+    this.watchdog.defer(5000);
     //    this.state.timestamp = null;
     //    this.state.duration = null;
     //    this.state.elapsedTime = null;
@@ -138,19 +166,23 @@ class AppleTVHost extends HostBase {
     //    this.state.appBundleIdentifier = "NONE";
     //    this.state.playbackState = "NOT PLAYING";
     //    this.state.info = null;
-    this.state = {
-      timestamp: null,
-      duration: null,
-      elapsedTime: null,
-      playbackRate: null,
-      album: null,
-      artist: null,
-      appDisplayName: null,
-      appBundleIdentifier: "NONE",
-      playbackState: "stopped",
-      info: null,
-      displayId: null
-    };
+    try {
+      this.state = JSON.parse(localStorage.getItem("state"));
+    } catch (e) {
+      this.state = {
+        timestamp: null,
+        duration: null,
+        elapsedTime: null,
+        playbackRate: null,
+        album: null,
+        artist: null,
+        appDisplayName: null,
+        appBundleIdentifier: "NONE",
+        playbackState: "stopped",
+        info: null,
+        displayId: null
+      };
+    }
 
     if (false) {
       d.on("debug", message => {
@@ -166,6 +198,7 @@ class AppleTVHost extends HostBase {
           !(this.state.playbackState === "playing")
         ) {
           this.state = { playbackState: "stopped" };
+          localStorage.setItem("state", JSON.stringify(this.state));
         }
       });
     }
@@ -189,6 +222,7 @@ class AppleTVHost extends HostBase {
             playbackState: "paused"
           };
         }
+        localStorage.setItem("state", JSON.stringify(this.state));
       });
     }
 
@@ -234,6 +268,7 @@ class AppleTVHost extends HostBase {
                 info: null,
                 displayId: null
               };
+              localStorage.setItem("state", JSON.stringify(this.state));
               this.stopTimer();
               return;
             }
@@ -257,6 +292,7 @@ class AppleTVHost extends HostBase {
           if (msg.nowPlayingInfo) {
             this.state = { elapsedTime: msg.nowPlayingInfo.elapsedTime };
           }
+          localStorage.setItem("state", JSON.stringify(this.state));
           if (this.state.playbackState !== "playing") {
             this.stopTimer();
           } else if (this.state.info.duration) {
@@ -294,6 +330,7 @@ class AppleTVHost extends HostBase {
     if (true) {
       d.on("nowPlaying", info => {
         console.log("nowPlaying");
+        this.watchdog.defer(5000);
         if (this.isStopped(info)) {
           console.log("stopped");
           this.state = {
@@ -308,6 +345,7 @@ class AppleTVHost extends HostBase {
             playbackState: "NOT PLAYING",
             info: null
           };
+          localStorage.setItem("state", JSON.stringify(this.state));
           this.stopTimer();
           console.log("null info");
           return;
@@ -328,6 +366,7 @@ class AppleTVHost extends HostBase {
             playbackState: info.playbackState || message.playbackState,
             info: JSON.stringify(info)
           };
+          localStorage.setItem("state", JSON.stringify(this.state));
           if (this.state.playbackState !== "playing") {
             this.stopTimer();
           } else if (info.duration) {
@@ -362,9 +401,8 @@ class AppleTVHost extends HostBase {
 
 const main = async () => {
   try {
-    const devices = await scan();
+    const devices = await scan(undefined, 2);
     console.log("----- scan complete");
-    console.log("devices", devices);
     for (const device of devices) {
       foundDevices[device.name] = device;
     }
@@ -380,6 +418,7 @@ const main = async () => {
   }
 };
 main();
-setTimeout(() => {
-  process.exit(0);
-}, 6100);
+
+//setTimeout(() => {
+//  process.exit(0);
+//}, 6100);
