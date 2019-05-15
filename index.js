@@ -65,15 +65,18 @@ class DelayedTask {
 class AppleTVHost extends HostBase {
   constructor(host) {
     super(MQTT_HOST, TOPIC_ROOT + "/" + host.device);
-    this.host = host;
-    this.dev = foundDevices[host.name];
-    this.credentials = parseCredentials(host.creds);
-
-    this.interval = null;
-
     this.watchdog = new DelayedTask(() => {
       process.exit(0);
     }, 10000);
+
+    this.host = host;
+    this.dev = foundDevices[host.name];
+    if (!this.dev) {
+      throw new Error("host not found", host);
+    }
+    this.credentials = parseCredentials(host.creds);
+
+    this.interval = null;
 
     //    this.state = { playbackState: "stopped" };
     // devices is an array of AppleTV objects
@@ -401,15 +404,21 @@ class AppleTVHost extends HostBase {
 
 const main = async () => {
   try {
-    const devices = await scan(undefined, 2);
+    const devices = await scan(undefined, 5);
     console.log("----- scan complete");
     for (const device of devices) {
+      console.log("found device", device.name, device.address, device.port);
       foundDevices[device.name] = device;
     }
 
     // TODO: use env  for array of atv?
     for (const device of Config.atv) {
-      hosts[device.name] = new AppleTVHost(device);
+      try {
+        hosts[device.name] = new AppleTVHost(device);
+      } catch (e) {
+        console.log("exception", e);
+        process.exit(0);
+      }
     }
   } catch (e) {
     console.log("exception 1");
