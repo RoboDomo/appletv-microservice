@@ -158,7 +158,7 @@ class AppleTVHost extends HostBase {
   async connect() {
     const d = await this.dev.openConnection(this.credentials);
     console.log("connected", d.address);
-    this.watchdog.defer(5000);
+    this.watchdog.defer(15000);
     //    this.state.timestamp = null;
     //    this.state.duration = null;
     //    this.state.elapsedTime = null;
@@ -331,6 +331,7 @@ class AppleTVHost extends HostBase {
     }
 
     if (true) {
+      console.log("Subscribing to nowPlaying");
       d.on("nowPlaying", info => {
         console.log("nowPlaying");
         this.watchdog.defer(5000);
