@@ -1,4 +1,4 @@
-//process.env.DEBUG = "HostBase";
+//process.env.DEBUr = "HostBase";
 
 const console = require("console"),
   HostBase = require("microservice-core/HostBase"),
@@ -66,13 +66,13 @@ class AppleTVHost extends HostBase {
   constructor(host) {
     super(MQTT_HOST, TOPIC_ROOT + "/" + host.device);
     this.watchdog = new DelayedTask(() => {
-      process.exit(0);
+      //      process.exit(0);
     }, 10000);
 
     this.host = host;
     this.dev = foundDevices[host.name];
     if (!this.dev) {
-      throw new Error("host not found", host);
+      throw new Error("host not found " + host.name);
     }
     this.credentials = parseCredentials(host.creds);
 
@@ -81,7 +81,7 @@ class AppleTVHost extends HostBase {
     //    this.state = { playbackState: "stopped" };
     // devices is an array of AppleTV objects
     this.dev.on("error", e => {
-      console.log("device error");
+      console.log("device error ", host.device);
       console.log(e.message);
       console.log(e.stack);
       setTimeout(async () => {
