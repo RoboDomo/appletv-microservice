@@ -1,5 +1,30 @@
 //process.env.DEBUr = "HostBase";
 
+/**
+ * Notes:
+ *
+ * For more than one ATV in config.js, if the scan for ATVs doesn't find them all, the whole microservice
+ * exits and is respawned by forever.  The node-appletv module doesn't seem to be robust, and the scans frequently
+ * fail to find all the devices.  This causes a long delay of restart, restart, restart until they are found.
+ *
+ * It may be more ideal to use something like node cluster or fork or some other threaded scheme so each
+ * ATV is controlled by a thread/process.  If that device causes error that needs to exit(), then the
+ * rest of the microservice can remain running.
+ *
+ * The responses from node-appletv as to what is now playing are not particularly real-time.  We do our best to
+ * update the client as soon as new info is available from node-appletv.
+ *
+ * This code contains some if(false) or if(true) blocks that can be used to try and diagnose the communication
+ * stream and what's going on in node-appletv.
+ *
+ * The node-appletv module is open source so it could be used as a template to implement a better working node module.
+ * See pyatv, a pythong apple tv library/client that seems to work, but doesn't provide as much useful information (like
+ * nowPlaying details).
+ *
+ * The startTimer/stopTimer logic is commented out.  The concept is that when a nowPlayingInfo comes in with state
+ * "playing" and an elapsedTime, we start a setInterval timer and send a message 1/sec to the client so it can
+ * roughly track the current point in the playback.
+ */
 const console = require("console"),
   HostBase = require("microservice-core/HostBase"),
   LocalStorage = require("node-localstorage").LocalStorage,
@@ -82,8 +107,8 @@ class AppleTVHost extends HostBase {
     // devices is an array of AppleTV objects
     this.dev.on("error", e => {
       console.log("device error ", host.device);
-      console.log(e.message);
-      console.log(e.stack);
+      console.log(host.device, e.message);
+      console.log(host.device, e.stack);
       setTimeout(async () => {
         await this.connect();
       }, 1);
@@ -96,14 +121,15 @@ class AppleTVHost extends HostBase {
 
   async command(type, arg) {
     this.watchdog.defer();
-    console.log("commands", commands);
-    console.log("command", "'" + arg + "'", commands[arg]);
-    console.log(commands["BeginForward"]);
+    console.log(this.host.device, "commands", commands);
+    console.log(this.host.device, "command", "'" + arg + "'", commands[arg]);
+    console.log(this.host.device, commands["BeginForward"]);
     try {
       // see https://github.com/Daij-Djan/DDHidLib/blob/master/usb_hid_usages.txt
       if (commands[arg]) {
         const [page, code] = commands[arg];
         console.log(
+          this.host.name,
           `await this.dev.sendKeyPressAndRelease(${page}, 0x${code.toString(
             16
           )});`
@@ -112,17 +138,17 @@ class AppleTVHost extends HostBase {
         await this.dev.sendKeyPressAndRelease(page, code);
         //        await this.dev.sendKeyCommand(arg);
       } else {
-        console.log("invalid command ", arg);
+        console.log(this.host.name, "invalid command ", arg);
         return;
       }
       //      await this.dev.sendKeyCommand(commands[arg]);
     } catch (e) {
-      console.log("sendKeyCommand", e.message, e.stack);
+      console.log(this.host.name, "sendKeyCommand", e.message, e.stack);
     }
   }
 
   stopTimer() {
-    console.log("stopTimer");
+    console.log(this.host.name, "stopTimer");
     return;
     if (this.interval) {
       clearInterval(this.interval);
@@ -131,7 +157,7 @@ class AppleTVHost extends HostBase {
   }
 
   startTimer() {
-    console.log("startTimer", this.state.elapsedTime);
+    console.log(this.host.name, "startTimer", this.state.elapsedTime);
     return;
     /*
     this.stopTimer();
@@ -157,7 +183,7 @@ class AppleTVHost extends HostBase {
 
   async connect() {
     const d = await this.dev.openConnection(this.credentials);
-    console.log("connected", d.address);
+    console.log(this.host.name, "connected", d.address);
     this.watchdog.defer(15000);
     //    this.state.timestamp = null;
     //    this.state.duration = null;
@@ -189,13 +215,13 @@ class AppleTVHost extends HostBase {
 
     if (false) {
       d.on("debug", message => {
-        console.log("DEBUG", message);
+        console.log(this.host.name, "DEBUG", message);
       });
     }
 
     if (false) {
       d.on("supportedCommands", commands => {
-        //        console.log("supportedCommands", commands);
+        //        console.log(this.host.name, "supportedCommands", commands);
         if (
           commands.length === 0 &&
           !(this.state.playbackState === "playing")
@@ -207,7 +233,7 @@ class AppleTVHost extends HostBase {
     }
     if (false) {
       d.on("nowPlaying", xinfo => {
-        //        console.log("nowPlaying", xinfo);
+        //        console.log(this.host.name, "nowPlaying", xinfo);
         if (xinfo === null) {
           return;
         }
@@ -231,25 +257,25 @@ class AppleTVHost extends HostBase {
 
     if (false) {
       d.on("message", message => {
-        console.log("message", message);
+        console.log(this.host.name, "message", message);
         const playbackStates = ["stopped", "playing", "paused"];
 
         const handleTransactionMessage = msg => {
-          //          console.log("----------");
-          console.log("transaction", msg);
+          //          console.log(this.host.name, "----------");
+          console.log(this.host.name, "transaction", msg);
           //          if (msg.packets.packets.length) {
-          //            console.log(
+          //            console.log(this.host.device,
           //              "packets",
           //              msg.packets.packets[0].packetData.toString()
           //            );
           //          }
-          //          console.log(
+          //          console.log(this.host.device,
           //            "TransactionPacket",
           //            msg.packets[0].packetData.toString()
           //          );
-          //          console.log("");
-          //          console.log("");
-          //          console.log("");
+          //          console.log(this.host.device, "");
+          //          console.log(this.host.device, "");
+          //          console.log(this.host.device, "");
         };
 
         const handleSetStateMessage = msg => {
@@ -280,7 +306,7 @@ class AppleTVHost extends HostBase {
             msg.nowPlayingInfo.appDisplayName = msg.displayName;
             msg.nowPlayingInfo.appBundleIdentifier = msg.displayID;
           }
-          console.log("== msg", msg);
+          console.log(this.host.device, "== msg", msg);
           this.state = {
             info: Object.assign({}, msg.nowPlayingInfo),
             displayId: msg.displayID,
@@ -303,19 +329,19 @@ class AppleTVHost extends HostBase {
           } else {
             this.stopTimer();
           }
-          console.warn("=== state", this.state);
+          console.warn(this.host.device, "=== state", this.state);
         };
         const handleNotificationMessage = msg => {
-          console.log("----------");
-          console.log("notification", msg);
-          console.log("");
-          //        console.log("userInfos", msg.userInfos[0].toString("UTF-8"));
-          console.log("");
-          console.log("");
+          console.log(this.host.device, "----------");
+          console.log(this.host.device, "notification", msg);
+          console.log(this.host.device, "");
+          //        console.log(this.host.device, "userInfos", msg.userInfos[0].toString("UTF-8"));
+          console.log(this.host.device, "");
+          console.log(this.host.device, "");
         };
 
-        //        console.log("----------");
-        //        console.log("got message", message);
+        //        console.log(this.host.device, "----------");
+        //        console.log(this.host.device, "got message", message);
         switch (message.type) {
           case 4:
             handleSetStateMessage(message.message[".setStateMessage"]);
@@ -331,12 +357,12 @@ class AppleTVHost extends HostBase {
     }
 
     if (true) {
-      console.log("Subscribing to nowPlaying");
+      console.log(this.host.device, "Subscribing to nowPlaying");
       d.on("nowPlaying", info => {
-        console.log("nowPlaying");
+        console.log(this.host.device, "nowPlaying");
         this.watchdog.defer(5000);
         if (this.isStopped(info)) {
-          console.log("stopped");
+          console.log(this.host.device, "stopped");
           this.state = {
             timestamp: null,
             duration: null,
@@ -351,11 +377,11 @@ class AppleTVHost extends HostBase {
           };
           localStorage.setItem("state", JSON.stringify(this.state));
           this.stopTimer();
-          console.log("null info");
+          console.log(this.host.device, "null info");
           return;
         }
         const message = info.message.nowPlayingInfo;
-        console.log("info", info);
+        console.log(this.host.device, "info", info);
         if (message) {
           this.state = {
             timestamp: info.timestamp,
@@ -379,6 +405,7 @@ class AppleTVHost extends HostBase {
             this.stopTimer();
           }
           console.log(
+            this.host.device,
             info.appBundleIdentifier,
             info.message.displayName,
             info.playbackState,
@@ -388,16 +415,16 @@ class AppleTVHost extends HostBase {
             "elapsed",
             info.elapsedTime / 60
           );
-          console.log("--------");
-          console.log("");
-          console.log("");
+          console.log(this.host.device, "--------");
+          console.log(this.host.device, "");
+          console.log(this.host.device, "");
         }
       });
     }
     this.atv = d;
   }
   catch(e) {
-    console.log("exception 2");
+    console.log(this.host.device, "exception 2");
     console.log(e.message);
     console.log(e.stack);
   }
