@@ -20,9 +20,9 @@ $ sudo apt-get install libsodium-dev avahi-daemon avahi-discover libnss-mdns lib
 You will also need to run 
 ```$ ./node_mocdules/.bin/appletv pair
 ``` 
-to get the creds: string that needs to be in config.js.
+to get the creds: string that needs to be in your Config.js that is loaded into MongoDB.  See the config repository.
 
-You will need to pair with each appletv in your network and add an entry for each in config.js.
+You will need to pair with each appletv in your network and add an entry for each in MongoDB.
 
 ## Docker build instructions
 You can neatly package this microservice as a Docker container:
@@ -37,25 +37,8 @@ $ docker build -t appletv-microservice .
 
 See explanation of environment variables below.
 
-You will want to edit config.js on the host, and use Docker volume option
-to the run command so it appears in the container.
+You will want to edit Config.js in the config repository.
 
-config.js (this is the default config.js in the container if you don't provide one!):
-
-```
-// Configuraiton file for appletv-microservice
-module.exports = [
-    {device: 'tivo-bolt-3tb', ip: '192.168.4.34'},
-    {device: 'tivo-bolt', ip: '192.168.4.10'},
-    {device: 'tivo-office2', ip: '192.168.4.11'},
-    {device: 'tivo-office', ip: '192.168.4.12'},
-    {device: 'tivo-guest', ip: '192.168.4.13'},
-]
-```
-
-Note: we use a plain old JavaScript module instead of ugly JSON format.  This allows comments
-and functions and Date objects, and so on.  You can conditionally add records to the array
-based upon environment variables, etc.
 
 To run it:
 
@@ -64,7 +47,6 @@ $ docker run \
     -d \
     --rm \
     --name="appletv-microservice" \
-    -v /host/path/to/config.js:/home/app/config.js \
     -e "MQTT_HOST=mqtt://hostname" \
     -e "TOPIC_ROOT=appletv" \
     appletv-microservice

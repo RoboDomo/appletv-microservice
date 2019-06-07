@@ -1,4 +1,5 @@
-//process.env.DEBUr = "HostBase";
+process.env.debug = "appletv";
+process.title = "appletv-microservice";
 
 /**
  * Notes:
@@ -26,6 +27,7 @@
  * roughly track the current point in the playback.
  */
 const console = require("console"),
+  debug = require("debug")("appletv"),
   HostBase = require("microservice-core/HostBase"),
   LocalStorage = require("node-localstorage").LocalStorage,
   localStorage = new LocalStorage("/tmp/appletv-localstorage");
@@ -94,7 +96,7 @@ class AppleTVHost extends HostBase {
     if (!this.dev) {
       throw new Error("host not found " + host.name);
     }
-    this.credentials = parseCredentials(host.creds);
+    this.credentials = parseCredentials(host.credentials);
 
     this.interval = null;
 
@@ -116,24 +118,24 @@ class AppleTVHost extends HostBase {
 
   async command(type, arg) {
     this.watchdog.defer();
-    console.log(this.host.device, "commands", commands);
-    console.log(this.host.device, "command", "'" + arg + "'", commands[arg]);
-    console.log(this.host.device, commands["BeginForward"]);
+    debug(this.host.device, "commands", commands);
+    debug(this.host.device, "command", "'" + arg + "'", commands[arg]);
+    debug(this.host.device, commands["BeginForward"]);
     try {
       // see https://github.com/Daij-Djan/DDHidLib/blob/master/usb_hid_usages.txt
       if (commands[arg]) {
         const [page, code] = commands[arg];
-        console.log(
-          this.host.name,
-          `await this.dev.sendKeyPressAndRelease(${page}, 0x${code.toString(
-            16
-          )});`
-        );
+        //        console.log(
+        //          this.host.name,
+        //          `await this.dev.sendKeyPressAndRelease(${page}, 0x${code.toString(
+        //            16
+        //          )});`
+        //        );
         this.watchdog.defer();
         await this.dev.sendKeyPressAndRelease(page, code);
         //        await this.dev.sendKeyCommand(arg);
       } else {
-        console.log(this.host.name, "invalid command ", arg);
+        debug(this.host.name, "invalid command ", arg);
         return;
       }
       //      await this.dev.sendKeyCommand(commands[arg]);
@@ -143,7 +145,7 @@ class AppleTVHost extends HostBase {
   }
 
   stopTimer() {
-    console.log(this.host.name, "stopTimer");
+    debug(this.host.name, "stopTimer");
     return;
     // commented out for now
     /*
@@ -155,7 +157,7 @@ class AppleTVHost extends HostBase {
   }
 
   startTimer() {
-    console.log(this.host.name, "startTimer", this.state.elapsedTime);
+    debug(this.host.name, "startTimer", this.state.elapsedTime);
     return;
     // commented out for now
     /*
@@ -182,7 +184,7 @@ class AppleTVHost extends HostBase {
 
   async connect() {
     const d = await this.dev.openConnection(this.credentials);
-    console.log(this.host.name, "connected", d.address);
+    debug(this.host.name, "connected", d.address);
     this.watchdog.defer(15000);
     //    this.state.timestamp = null;
     //    this.state.duration = null;
@@ -212,220 +214,70 @@ class AppleTVHost extends HostBase {
       };
     }
 
-    if (false) {
-      d.on("debug", message => {
-        console.log(this.host.name, "DEBUG", message);
-      });
-    }
-
-    if (false) {
-      d.on("supportedCommands", commands => {
-        //        console.log(this.host.name, "supportedCommands", commands);
-        if (
-          commands.length === 0 &&
-          !(this.state.playbackState === "playing")
-        ) {
-          this.state = { playbackState: "stopped" };
-          localStorage.setItem("state", JSON.stringify(this.state));
-        }
-      });
-    }
-    if (false) {
-      d.on("nowPlaying", xinfo => {
-        //        console.log(this.host.name, "nowPlaying", xinfo);
-        if (xinfo === null) {
-          return;
-        }
-
-        const info = Object.assign({}, xinfo);
-        const stateIsPlaying = info.playbackState === "playing",
-          stateIsPaused = info.playbackState === "paused";
-
-        if (stateIsPlaying && !(this.state.playbackState === "playing")) {
-          this.state = {
-            playbackState: "playing"
-          };
-        } else if (stateIsPaused && this.state.playbackState === "playing") {
-          this.state = {
-            playbackState: "paused"
-          };
-        }
+    console.log(this.host.device, "Subscribing to nowPlaying");
+    d.on("nowPlaying", info => {
+      console.log(this.host.device, "nowPlaying");
+      this.watchdog.defer(5000);
+      if (this.isStopped(info)) {
+        console.log(this.host.device, "stopped");
+        this.state = {
+          timestamp: null,
+          duration: null,
+          elapsedTime: null,
+          playbackRate: null,
+          album: null,
+          artist: null,
+          appDisplayName: null,
+          appBundleIdentifier: "NONE",
+          playbackState: "NOT PLAYING",
+          info: null
+        };
         localStorage.setItem("state", JSON.stringify(this.state));
-      });
-    }
-
-    if (false) {
-      d.on("message", message => {
-        console.log(this.host.name, "message", message);
-        const playbackStates = ["stopped", "playing", "paused"];
-
-        const handleTransactionMessage = msg => {
-          //          console.log(this.host.name, "----------");
-          console.log(this.host.name, "transaction", msg);
-          //          if (msg.packets.packets.length) {
-          //            console.log(this.host.device,
-          //              "packets",
-          //              msg.packets.packets[0].packetData.toString()
-          //            );
-          //          }
-          //          console.log(this.host.device,
-          //            "TransactionPacket",
-          //            msg.packets[0].packetData.toString()
-          //          );
-          //          console.log(this.host.device, "");
-          //          console.log(this.host.device, "");
-          //          console.log(this.host.device, "");
+        this.stopTimer();
+        console.log(this.host.device, "null info");
+        return;
+      }
+      const message = info.message.nowPlayingInfo;
+      console.log(this.host.device, "info", info);
+      if (message) {
+        this.state = {
+          timestamp: info.timestamp,
+          duration: info.duration,
+          elapsedTime: info.elapsedTime,
+          playbackRate: message.playbackRate,
+          album: message.album || "",
+          title: info.message.nowPlayingInfo.title || "wait...",
+          artist: message.artist || "",
+          appDisplayName: info.appDisplayName || message.displayName || "",
+          appBundleIdentifier: info.appBundleIdentifier || "",
+          playbackState: info.playbackState || message.playbackState,
+          info: JSON.stringify(info)
         };
-
-        const handleSetStateMessage = msg => {
-          if (!msg) {
-            return;
-          }
-          if (msg.nowPlayingInfo) {
-            if (!msg.nowPlayingInfo.duration) {
-              this.state = {
-                timestamp: null,
-                duration: null,
-                elapsedTime: null,
-                playbackRate: null,
-                album: null,
-                artist: null,
-                appDisplayName: null,
-                appBundleIdentifier: "NONE",
-                playbackState: "stopped",
-                info: null,
-                displayId: null
-              };
-              localStorage.setItem("state", JSON.stringify(this.state));
-              this.stopTimer();
-              return;
-            }
-            msg.nowPlayingInfo.playbackState =
-              playbackStates[msg.playbackState];
-            msg.nowPlayingInfo.appDisplayName = msg.displayName;
-            msg.nowPlayingInfo.appBundleIdentifier = msg.displayID;
-          }
-          console.log(this.host.device, "== msg", msg);
-          this.state = {
-            info: Object.assign({}, msg.nowPlayingInfo),
-            displayId: msg.displayID,
-            playbackState: playbackStates[msg.playbackState],
-            title: msg.title || null,
-            album: msg.album,
-            artist: msg.artist,
-            duration: msg.duration,
-            playbackRate: msg.playbackRate,
-            timestamp: msg.timestamp
-          };
-          if (msg.nowPlayingInfo) {
-            this.state = { elapsedTime: msg.nowPlayingInfo.elapsedTime };
-          }
-          localStorage.setItem("state", JSON.stringify(this.state));
-          if (this.state.playbackState !== "playing") {
-            this.stopTimer();
-          } else if (this.state.info.duration) {
-            this.startTimer();
-          } else {
-            this.stopTimer();
-          }
-          console.warn(this.host.device, "=== state", this.state);
-        };
-        const handleNotificationMessage = msg => {
-          console.log(this.host.device, "----------");
-          console.log(this.host.device, "notification", msg);
-          console.log(this.host.device, "");
-          //        console.log(this.host.device, "userInfos", msg.userInfos[0].toString("UTF-8"));
-          console.log(this.host.device, "");
-          console.log(this.host.device, "");
-        };
-
-        //        console.log(this.host.device, "----------");
-        //        console.log(this.host.device, "got message", message);
-        switch (message.type) {
-          case 4:
-            handleSetStateMessage(message.message[".setStateMessage"]);
-            break;
-          case 11:
-            handleNotificationMessage(message.message[".notificationMessage"]);
-            break;
-          case 33:
-            handleTransactionMessage(message.message[".transactionMessage"]);
-            break;
-        }
-      });
-    }
-
-    if (true) {
-      console.log(this.host.device, "Subscribing to nowPlaying");
-      d.on("nowPlaying", info => {
-        console.log(this.host.device, "nowPlaying");
-        this.watchdog.defer(5000);
-        if (this.isStopped(info)) {
-          console.log(this.host.device, "stopped");
-          this.state = {
-            timestamp: null,
-            duration: null,
-            elapsedTime: null,
-            playbackRate: null,
-            album: null,
-            artist: null,
-            appDisplayName: null,
-            appBundleIdentifier: "NONE",
-            playbackState: "NOT PLAYING",
-            info: null
-          };
-          localStorage.setItem("state", JSON.stringify(this.state));
+        localStorage.setItem("state", JSON.stringify(this.state));
+        if (this.state.playbackState !== "playing") {
           this.stopTimer();
-          console.log(this.host.device, "null info");
-          return;
+        } else if (info.duration) {
+          this.startTimer();
+        } else {
+          this.stopTimer();
         }
-        const message = info.message.nowPlayingInfo;
-        console.log(this.host.device, "info", info);
-        if (message) {
-          this.state = {
-            timestamp: info.timestamp,
-            duration: info.duration,
-            elapsedTime: info.elapsedTime,
-            playbackRate: message.playbackRate,
-            album: message.album || "",
-            title: info.message.nowPlayingInfo.title || "wait...",
-            artist: message.artist || "",
-            appDisplayName: info.appDisplayName || message.displayName || "",
-            appBundleIdentifier: info.appBundleIdentifier || "",
-            playbackState: info.playbackState || message.playbackState,
-            info: JSON.stringify(info)
-          };
-          localStorage.setItem("state", JSON.stringify(this.state));
-          if (this.state.playbackState !== "playing") {
-            this.stopTimer();
-          } else if (info.duration) {
-            this.startTimer();
-          } else {
-            this.stopTimer();
-          }
-          console.log(
-            this.host.device,
-            info.appBundleIdentifier,
-            info.message.displayName,
-            info.playbackState,
-            info.message.nowPlayingInfo.title,
-            "duration",
-            info.duration / 60,
-            "elapsed",
-            info.elapsedTime / 60
-          );
-          console.log(this.host.device, "--------");
-          console.log(this.host.device, "");
-          console.log(this.host.device, "");
-        }
-      });
-    }
+        console.log(
+          this.host.device,
+          info.appBundleIdentifier,
+          info.message.displayName,
+          info.playbackState,
+          info.message.nowPlayingInfo.title,
+          "duration",
+          info.duration / 60,
+          "elapsed",
+          info.elapsedTime / 60
+        );
+        console.log(this.host.device, "--------");
+        console.log(this.host.device, "");
+        console.log(this.host.device, "");
+      }
+    });
     this.atv = d;
-  }
-  catch(e) {
-    console.log(this.host.device, "exception 2");
-    console.log(e.message);
-    console.log(e.stack);
   }
 }
 
