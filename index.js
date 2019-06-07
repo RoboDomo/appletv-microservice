@@ -3,7 +3,7 @@
 /**
  * Notes:
  *
- * For more than one ATV in config.js, if the scan for ATVs doesn't find them all, the whole microservice
+ * For more than one ATV in mongodb config, if the scan for ATVs doesn't find them all, the whole microservice
  * exits and is respawned by forever.  The node-appletv module doesn't seem to be robust, and the scans frequently
  * fail to find all the devices.  This causes a long delay of restart, restart, restart until they are found.
  *
@@ -32,11 +32,6 @@ const console = require("console"),
 
 const atv = require("node-appletv"),
   { scan, parseCredentials } = atv;
-
-//const atv = require("node-appletv"),
-//  { AppleTV, scan, parseCredentials } = atv;
-
-const Config = require("./config");
 
 const TOPIC_ROOT = process.env.TOPIC_ROOT || "appletv",
   MQTT_HOST = process.env.MQTT_HOST || "mqtt://robodomo";
@@ -150,15 +145,19 @@ class AppleTVHost extends HostBase {
   stopTimer() {
     console.log(this.host.name, "stopTimer");
     return;
+    // commented out for now
+    /*
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
     }
+    */
   }
 
   startTimer() {
     console.log(this.host.name, "startTimer", this.state.elapsedTime);
     return;
+    // commented out for now
     /*
     this.stopTimer();
     let elapsed = this.state.elapsedTime || 0;
@@ -431,6 +430,7 @@ class AppleTVHost extends HostBase {
 }
 
 const main = async () => {
+  const Config = await HostBase.config();
   try {
     const devices = await scan(undefined, 5);
     console.log("----- scan complete");
@@ -440,7 +440,7 @@ const main = async () => {
     }
 
     // TODO: use env  for array of atv?
-    for (const device of Config.atv) {
+    for (const device of Config.appletv.devices) {
       try {
         hosts[device.name] = new AppleTVHost(device);
       } catch (e) {
