@@ -1,5 +1,5 @@
 process.env.debug = "appletv";
-process.title = "appletv-microservice";
+process.title = process.env.TITLE || "appletv-microservice";
 
 /**
  * Notes:
