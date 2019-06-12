@@ -106,9 +106,7 @@ class AppleTVHost extends HostBase {
       console.log("device error ", host.device);
       console.log(host.device, e.message);
       console.log(host.device, e.stack);
-      setTimeout(async () => {
-        await this.connect();
-      }, 1);
+      process.exit(0);
     });
 
     setTimeout(async () => {

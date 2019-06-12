@@ -4,3 +4,10 @@
 **/.DS_Store
 **/*.md
 **/examples
+**/build.sh
+**/debug.js
+**/docker-compose.yml
+**/Dockerfile
+**/test*
+**/package-lock.json
+**/yarn.lock
