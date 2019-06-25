@@ -106,7 +106,12 @@ class AppleTVHost extends HostBase {
       console.log("device error ", host.device);
       console.log(host.device, e.message);
       console.log(host.device, e.stack);
-      process.exit(0);
+      if (e.message.indexOf("ENOENT") === -1) {
+        process.exit(0);
+      } else {
+        // hackish, due to bug - missing .proto file.
+        // disconnected
+      }
     });
 
     setTimeout(async () => {
