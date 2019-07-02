@@ -103,12 +103,26 @@ class AppleTVHost extends HostBase {
     //    this.state = { playbackState: "stopped" };
     // devices is an array of AppleTV objects
     this.dev.on("error", e => {
-      console.log("device error ", host.device);
-      console.log(host.device, e.message);
-      console.log(host.device, e.stack);
       if (e.message.indexOf("ENOENT") === -1) {
+        console.log("device error ", host.device);
+        console.log(host.device, e.message);
+        console.log(host.device, e.stack);
         process.exit(0);
       } else {
+        this.state = {
+          timestamp: null,
+          duration: null,
+          elapsedTime: null,
+          playbackRate: null,
+          album: null,
+          artist: null,
+          title: null,
+          appDisplayName: null,
+          appBundleIdentifier: "NONE",
+          playbackState: "stopped",
+          info: null,
+          displayId: null
+        };
         // hackish, due to bug - missing .proto file.
         // disconnected
       }
@@ -209,6 +223,7 @@ class AppleTVHost extends HostBase {
         playbackRate: null,
         album: null,
         artist: null,
+        title: null,
         appDisplayName: null,
         appBundleIdentifier: "NONE",
         playbackState: "stopped",
