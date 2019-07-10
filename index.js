@@ -28,6 +28,7 @@ process.title = process.env.TITLE || "appletv-microservice";
  */
 const console = require("console"),
   debug = require("debug")("appletv"),
+  { spawn } = require("child_process"),
   HostBase = require("microservice-core/HostBase"),
   LocalStorage = require("node-localstorage").LocalStorage,
   localStorage = new LocalStorage("/tmp/appletv-localstorage");
@@ -299,29 +300,58 @@ class AppleTVHost extends HostBase {
   }
 }
 
+const children = {};
+
 const main = async () => {
   const Config = await HostBase.config();
-  try {
-    const devices = await scan(undefined, 5);
-    console.log("----- scan complete");
-    for (const device of devices) {
-      console.log("found device", device.name, device.address, device.port);
-      foundDevices[device.name] = device;
-    }
-
-    // TODO: use env  for array of atv?
+  if (process.argv.length === 2) {
+    // spawn a process per device
     for (const device of Config.appletv.devices) {
       try {
-        hosts[device.name] = new AppleTVHost(device);
+        const respawn = () => {
+          const command = ["./index.js", device.name];
+          console.log("spawn", "node", command);
+          children[device.name] = spawn("node", command);
+          children[device.name].stdout.on("data", data => {
+            console.log(data.toString());
+          });
+          children[device.name].on("close", code => {
+            console.log("Device exit", device.name, code);
+            respawn();
+          });
+        };
+        respawn();
       } catch (e) {
         console.log("exception", e);
         process.exit(0);
       }
     }
-  } catch (e) {
-    console.log("exception 1");
-    console.log(e.message);
-    console.log(e.stack);
+  } else {
+    try {
+      const arg = process.argv[2];
+      const devices = await scan(undefined, 5);
+      console.log("----- scan complete");
+      for (const device of devices) {
+        console.log("found device", device.name, device.address, device.port);
+        foundDevices[device.name] = device;
+      }
+
+      // TODO: use env  for array of atv?
+      for (const device of Config.appletv.devices) {
+        try {
+          if (arg === device.name) {
+            hosts[device.name] = new AppleTVHost(device);
+          }
+        } catch (e) {
+          console.log("exception", e);
+          process.exit(0);
+        }
+      }
+    } catch (e) {
+      console.log("exception 1");
+      console.log(e.message);
+      console.log(e.stack);
+    }
   }
 };
 main();
