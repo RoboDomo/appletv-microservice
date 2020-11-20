@@ -1,3 +1,15 @@
+/*********************************************************************************************************************
+ *********************************************************************************************************************
+ ********************************************************************************************************************
+
+***
+*** APPLE TV MICROSERVICE
+***
+
+*********************************************************************************************************************
+ *********************************************************************************************************************
+ ********************************************************************************************************************/
+
 process.env.debug = "appletv";
 // process.env.debug = "*";
 process.title = process.env.TITLE || "appletv-microservice";
@@ -136,9 +148,9 @@ class AppleTVHost extends HostBase {
 
   async command(type, arg) {
     this.watchdog.defer();
-    debug(this.host.device, "commands", commands);
+//    debug(this.host.device, "commands", commands);
     debug(this.host.device, "command", "'" + arg + "'", commands[arg]);
-    debug(this.host.device, commands["BeginForward"]);
+//    debug(this.host.device, commands["BeginForward"]);
     try {
       // see https://github.com/Daij-Djan/DDHidLib/blob/master/usb_hid_usages.txt
       if (commands[arg]) {
@@ -233,6 +245,8 @@ class AppleTVHost extends HostBase {
       };
     }
 
+//    console.log("ALERT!");
+//    this.alert("AppleTVHost", host);
     console.log(this.host.device, "Subscribing to nowPlaying");
     d.on("nowPlaying", info => {
       console.log(this.host.device, "nowPlaying");
