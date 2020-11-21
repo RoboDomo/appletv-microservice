@@ -245,8 +245,6 @@ class AppleTVHost extends HostBase {
       };
     }
 
-//    console.log("ALERT!");
-//    this.alert("AppleTVHost", host);
     console.log(this.host.device, "Subscribing to nowPlaying");
     d.on("nowPlaying", info => {
       console.log(this.host.device, "nowPlaying");

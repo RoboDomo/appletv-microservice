@@ -4,7 +4,6 @@ ENV NODE_ENV development
 RUN apt-get -y update && apt-get -y install build-essential neovim avahi-utils avahi-daemon avahi-discover libnss-mdns libavahi-compat-libdnssd-dev yarn
 ADD avahi-daemon.conf /etc/avahi/avahi-daemon.conf
 ADD nsswitch.conf /etc/nsswitch.conf
-RUN yarn global add forever 
 RUN useradd --user-group --create-home --shell /bin/false app
 ENV HOME=/home/app
 WORKDIR /home/app
