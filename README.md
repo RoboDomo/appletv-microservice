@@ -11,7 +11,7 @@ have a v3 Apple TV, you might test that it works and open an issue in this repo 
 NOT SURE ABOUT THIS: REQUIRES NODE V9, due to mdns module not compiling with newer versions.  A better option than installing V9 is to use
 docker.
 
-To build on Linux, you will need
+VERSION 10 of NODEJS is REQUIRED!  Aything older or anything newer seems to break node_modules dependencies.
 
 ```
 $ sudo apt-get install libsodium-dev avahi-daemon avahi-discover libnss-mdns libavahi-compat-libdnssd-dev

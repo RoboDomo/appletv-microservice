@@ -1,4 +1,4 @@
-FROM node:8
+FROM node:10
 ENV TZ=America/Los_Angeles
 ENV NODE_ENV development
 RUN apt-get -y update && apt-get -y install build-essential neovim avahi-utils avahi-daemon avahi-discover libnss-mdns libavahi-compat-libdnssd-dev yarn

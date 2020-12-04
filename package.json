@@ -21,7 +21,7 @@
     "debug": "^4.3.1",
     "forever": "^3.0.4",
     "microservice-core": "github:robodomo/microservice-core",
-    "mqtt": "^4.2.6",
+    "mqtt": "~4.2.6",
     "node-appletv": "github:GioCirque/node-appletv",
     "node-localstorage": "^2.1.6"
   }

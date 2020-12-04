@@ -49,7 +49,7 @@ const atv = require("node-appletv"),
   { scan, parseCredentials } = atv;
 
 const TOPIC_ROOT = process.env.TOPIC_ROOT || "appletv",
-  MQTT_HOST = process.env.MQTT_HOST || "mqtt://robodomo";
+  MQTT_HOST = process.env.MQTT_HOST || "mqtt://mqtt";
 
 const foundDevices = {};
 const hosts = {};
